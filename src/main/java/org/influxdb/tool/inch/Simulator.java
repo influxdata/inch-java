@@ -21,6 +21,7 @@ public class Simulator {
   String user;
   String password;
   String consistency = "any";
+  ConsistencyLevel consistencyLevel;
   int concurrency = 1;
   long measurements = 1; // Number of measurements
   List<Long> tags = Arrays.asList(10L, 10L, 10L); // tag cardinalities
@@ -29,6 +30,7 @@ public class Simulator {
   long batchSize = 5000;
   AtomicLong writtenN = new AtomicLong();
   String database = "j_stress";
+  String retentionPolicy = "autogen";
   String shardDuration = "7d"; // Set a custom shard duration.
   Long startTime; // Set a custom start time.
   long now;
@@ -45,19 +47,25 @@ public class Simulator {
   Map<String, String> ReportTags;
   boolean dryRun = false;
   long MaxErrors;
+  boolean lowLevelApi = false;
+  boolean sequentialBatchGen = false;
 
-  void setup() {
-    InfluxDB influxDB;
+  InfluxDB influxDB;
+  private void setup() {
+    //OkHttpClient.Builder builder = new OkHttpClient.Builder();
+    //builder.connectionSpecs(Arrays.asList(ConnectionSpec.CLEARTEXT));
     if (user == null || password == null) {
       influxDB = InfluxDBFactory.connect(host);
     } else {
       influxDB = InfluxDBFactory.connect(host, user, password);
     }
+    //influxDB.enableGzip();
     influxDB.query(new Query("create database " + database + " with duration " + shardDuration, null));
-    influxDB.close();
+    
+    consistencyLevel = ConsistencyLevel.valueOf(consistency.toUpperCase());
   }
 
-  void sendBatch(InfluxDB influxDB, BatchPoints batchPoints) {
+  private void sendBatch(InfluxDB influxDB, BatchPoints batchPoints) {
     if (dryRun) {
       return;
     }
@@ -65,7 +73,15 @@ public class Simulator {
     influxDB.write(batchPoints);
   }
   
-  void sendPoints(InfluxDB influxDB, BatchPoints batchPoints) {
+  private void sendBatch(InfluxDB influxDB, String lineProtocol) {
+    if (dryRun) {
+      return;
+    }
+
+    influxDB.write(database, retentionPolicy, consistencyLevel, lineProtocol);
+  }
+  
+  private void sendPoints(InfluxDB influxDB, BatchPoints batchPoints) {
     if (dryRun) {
       return;
     }
@@ -77,7 +93,7 @@ public class Simulator {
   
   
 
-  void validate() {
+  private void validate() {
 
   }
 
@@ -99,6 +115,8 @@ public class Simulator {
 
     setup();
 
+    ClosableBlockingQueue queue = generateBatches();
+    
     now = System.currentTimeMillis();
     baseTime = now * 1000000L;
 
@@ -123,8 +141,6 @@ public class Simulator {
     } else {
       System.out.println("Time span: off");
     }
-
-    ClosableBlockingQueue queue = generateBatches();
 
     CountDownLatch doneSignal = new CountDownLatch(concurrency);
     for (int i = 0; i < concurrency; i++) {
@@ -153,16 +169,11 @@ public class Simulator {
     // Report stats.
     long elapsed = System.currentTimeMillis() - now;
     System.out.println("Total time: " + (elapsed / 1000) + " seconds");
+    influxDB.close();
 
   }
 
-  void runClient(InchContext context, ClosableBlockingQueue queue) {
-    InfluxDB influxDB;
-    if (user == null || password == null) {
-      influxDB = InfluxDBFactory.connect(host);
-    } else {
-      influxDB = InfluxDBFactory.connect(host, user, password);
-    }
+  private void runClient(InchContext context, ClosableBlockingQueue queue) {
     /*influxDB.setDatabase(database);
     influxDB.setConsistency(ConsistencyLevel.valueOf(consistency.toUpperCase()));
     BatchOptions options = BatchOptions.DEFAULTS.actions((int) batchSize).bufferLimit(1000000);
@@ -176,8 +187,10 @@ public class Simulator {
         Object o = queue.take();
         if (ClosableBlockingQueue.isClosingSinal(o)) {
           return;
-        } else {
+        } else if (!lowLevelApi ){
           sendBatch(influxDB, (BatchPoints) o);
+        } else {
+          sendBatch(influxDB, (String) o);
         }
 
         writtenN.addAndGet(batchSize);
@@ -187,14 +200,11 @@ public class Simulator {
 
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
-    } finally {
-      influxDB.close();
     }
-
   }
 
   // runMonitor periodically prints the current status.
-  void runMonitor(InchContext context) {
+  private void runMonitor(InchContext context) {
     while (true) {
       long last = System.currentTimeMillis();
       long d = (System.currentTimeMillis() - last) / 1000;
@@ -220,7 +230,7 @@ public class Simulator {
 
   }
 
-  void printMonitorStats(long latestThroughput) {
+  private void printMonitorStats(long latestThroughput) {
     long writtenN = writtenN();
     long elapsed = (System.currentTimeMillis() - now) / 1000;
     
@@ -232,7 +242,7 @@ public class Simulator {
     System.out.println(message);
   }
 
-  void sendMonitorStats(boolean bool, long latestThroughput) {
+  private void sendMonitorStats(boolean bool, long latestThroughput) {
     // TBD
   }
 
@@ -271,14 +281,15 @@ public class Simulator {
 
   ClosableBlockingQueue generateBatches() {
     ClosableBlockingQueue queue = new ClosableBlockingQueue();
-    new Thread(new Runnable() {
+    
+    Runnable runnable = new Runnable() {
       @Override
       public void run() {
         long[] values = new long[tags.size()];
         long lastWrittenTotal = writtenN();
 
-        BatchPoints.Builder batchBuilder = BatchPoints.database(database).retentionPolicy("autogen")
-            .consistency(ConsistencyLevel.valueOf(consistency.toUpperCase()));
+        BatchPoints.Builder batchBuilder = BatchPoints.database(database).retentionPolicy(retentionPolicy)
+            .consistency(consistencyLevel);
         BatchPoints batchPoints = batchBuilder.build();
         for (long i = 0; i < pointN(); i++) {
           long lastMN = i % measurements;
@@ -311,8 +322,12 @@ public class Simulator {
           // Start new batch, if necessary.
           if (i > 0 && i % batchSize == 0) {
             try {
-              queue.put(batchPoints);
-              batchBuilder = BatchPoints.database(database).retentionPolicy("autogen")
+              if (!lowLevelApi) {
+                queue.put(batchPoints);
+              } else {
+                queue.put(batchPoints.lineProtocol());
+              }
+              batchBuilder = BatchPoints.database(database).retentionPolicy(retentionPolicy)
                   .consistency(ConsistencyLevel.valueOf(consistency.toUpperCase()));
               batchPoints = batchBuilder.build();
             } catch (InterruptedException e) {
@@ -324,7 +339,11 @@ public class Simulator {
         // Add final batch.
         if (!batchPoints.getPoints().isEmpty()) {
           try {
-            queue.put(batchPoints);
+            if (!lowLevelApi) {
+              queue.put(batchPoints);
+            } else {
+              queue.put(batchPoints.lineProtocol());
+            }
           } catch (InterruptedException e) {
             throw new RuntimeException(e);
           }
@@ -337,7 +356,13 @@ public class Simulator {
           throw new RuntimeException(e);
         }
       }
-    }).start();
+    };
+    
+    if (!sequentialBatchGen) {
+      new Thread(runnable).start();
+    } else {
+      runnable.run();
+    }
 
     return queue;
   }

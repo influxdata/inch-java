@@ -1,9 +1,5 @@
 package org.influxdb.tool.inch;
 
-import okhttp3.OkHttpClient;
-import org.influxdb.dto.Pong;
-
-import java.io.IOException;
 import java.util.Map;
 
 public class TestUtils {

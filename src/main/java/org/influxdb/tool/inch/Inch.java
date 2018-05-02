@@ -29,9 +29,12 @@ public class Inch {
     options.addOption(Option.builder("user").desc("User Name - String").hasArg().build());
     options.addOption(Option.builder("password").desc("Password - String").hasArg().build());
     options.addOption(Option.builder("m").desc("Measurements - int (default 1)").hasArg().build());
+    options.addOption(Option.builder("p").desc("Points per series - int (default 100)").hasArg().build());
     options.addOption(Option.builder("shardDuration").desc("Set shard duration - String (default 7d)").hasArg().build());
     options.addOption(Option.builder("t").desc("Tag cardinality -  String (default \"10,10,10\")").hasArg().build());
     options.addOption(Option.builder("time").desc("Time span to spread writes over - String (default \"1h\")").hasArg().build());
+    options.addOption(Option.builder("lowLevelApi").desc("Use low-level API").build());
+    options.addOption(Option.builder("sequentialBatchGen").desc("Run the Batch Point Generator sequentially").build());
     
     Simulator simulator = null;
     // create the parser
@@ -41,7 +44,7 @@ public class Inch {
         CommandLine line = parser.parse(options, args);
         if (line.hasOption("help")) {
           HelpFormatter formatter = new HelpFormatter();
-          formatter.printHelp("inch", options );
+          formatter.printHelp("inch", options, true);
           return;
         }
         simulator = new Simulator();
@@ -75,6 +78,9 @@ public class Inch {
         }
         if (line.hasOption("m")) {
           simulator.measurements = Long.parseLong(line.getOptionValue("m"));
+        }
+        if (line.hasOption("p")) {
+          simulator.pointsPerSeries = Long.parseLong(line.getOptionValue("p"));
         }
         if (line.hasOption("shardDuration")) {
           simulator.shardDuration = line.getOptionValue("shardDuration");
@@ -123,6 +129,12 @@ public class Inch {
           } 
           
           simulator.timeSpan = TimeUnit.NANOSECONDS.convert(number, timeUnit);
+        }
+        if (line.hasOption("lowLevelApi")) {
+          simulator.lowLevelApi = true;
+        }
+        if (line.hasOption("sequentialBatchGen")) {
+          simulator.sequentialBatchGen = true;
         }
         
     }

@@ -6,6 +6,9 @@ import org.influxdb.dto.QueryResult;
 import org.influxdb.InfluxDB;
 import org.junit.jupiter.api.AfterAll;
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,9 +38,10 @@ public class TagCardinalityTest {
   /**
    * Test writing a dataset with a tag set of 10k element = 50 * 10 *20 = 10 * 10 *10 *10
    * @throws InterruptedException
+   * @throws IOException 
    */
   @Test
-  public void testTagSetOf10k() throws InterruptedException {
+  public void testTagSetOf10k() throws InterruptedException, IOException {
     
     String cli = CLI + "-t 50,10,20"; 
     Inch.main(cli.split(" "));
@@ -59,9 +63,10 @@ public class TagCardinalityTest {
   /**
    * Test writing a dataset with a tag set of 20k element = 50 * 20 *20 = 10 * 10 * 20 *10
    * @throws InterruptedException
+   * @throws IOException 
    */
   //@Test
-  public void testTagSetOf20kInParallel() throws InterruptedException {
+  public void testTagSetOf20kInParallel() throws InterruptedException, IOException {
     
     String cli = CLI + "-t 50,20,20 -c 2";//2 threads 
     Inch.main(cli.split(" "));
