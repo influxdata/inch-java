@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
-import org.influxdb.TestUtils;
 import org.influxdb.InfluxDB.ResponseFormat;
 import org.influxdb.dto.Pong;
 
