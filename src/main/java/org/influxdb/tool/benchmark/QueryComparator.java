@@ -7,6 +7,11 @@ import org.influxdb.InfluxDB.ResponseFormat;
 import org.influxdb.dto.Query;
 import org.influxdb.tool.Utils;
 
+/**
+ * 
+ * @author hoan.le [at] bonitoo.io
+ *
+ */
 public class QueryComparator {
 
   public static void main(String[] args) throws InterruptedException, IOException {

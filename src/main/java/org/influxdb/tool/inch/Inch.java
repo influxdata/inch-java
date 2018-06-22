@@ -13,6 +13,11 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+/**
+ * 
+ * @author hoan.le [at] bonitoo.io
+ *
+ */
 public class Inch {
   public static void main(String[] args) throws InterruptedException {
     

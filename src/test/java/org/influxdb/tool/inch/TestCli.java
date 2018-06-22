@@ -2,6 +2,11 @@ package org.influxdb.tool.inch;
 
 import java.io.IOException;
 
+/**
+ * 
+ * @author hoan.le [at] bonitoo.io
+ *
+ */
 public class TestCli {
 
   public static void main(String[] args) throws InterruptedException, IOException {

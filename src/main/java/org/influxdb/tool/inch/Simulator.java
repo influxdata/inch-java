@@ -15,6 +15,11 @@ import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Query;
 
+/**
+ * 
+ * @author hoan.le [at] bonitoo.io
+ *
+ */
 public class Simulator {
 
   String host = "http://localhost:8086";
@@ -115,7 +120,7 @@ public class Simulator {
 
     setup();
 
-    ClosableBlockingQueue queue = generateBatches();
+    ClosableChannel queue = generateBatches();
     
     now = System.currentTimeMillis();
     baseTime = now * 1000000L;
@@ -173,7 +178,7 @@ public class Simulator {
 
   }
 
-  private void runClient(InchContext context, ClosableBlockingQueue queue) {
+  private void runClient(InchContext context, ClosableChannel queue) {
     /*influxDB.setDatabase(database);
     influxDB.setConsistency(ConsistencyLevel.valueOf(consistency.toUpperCase()));
     BatchOptions options = BatchOptions.DEFAULTS.actions((int) batchSize).bufferLimit(1000000);
@@ -185,7 +190,7 @@ public class Simulator {
           return;
         }
         Object o = queue.take();
-        if (ClosableBlockingQueue.isClosingSinal(o)) {
+        if (ClosableChannel.isClosingSinal(o)) {
           return;
         } else if (!lowLevelApi ){
           sendBatch(influxDB, (BatchPoints) o);
@@ -279,8 +284,8 @@ public class Simulator {
     return n;
   }
 
-  ClosableBlockingQueue generateBatches() {
-    ClosableBlockingQueue queue = new ClosableBlockingQueue();
+  ClosableChannel generateBatches() {
+    ClosableChannel queue = new ClosableChannel();
     
     Runnable runnable = new Runnable() {
       @Override
