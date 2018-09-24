@@ -60,7 +60,7 @@ into that package.
 To run all benchmarks for multiple version of java clients run:
 
 ```bash
-./run-client-bechmarks.sh '2.13' '2.14-SPAPSHOTS'
+./run-client-benchmarks.sh '2.13' '2.14-SPAPSHOTS'
 ```
 
 ### Benchmark report visualization
