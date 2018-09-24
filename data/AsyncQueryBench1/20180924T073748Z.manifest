@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "fileName": "20180924T073748Z.meta",
+    "size": 817
+  },
+  "limited": false,
+  "files": [
+    {
+      "database": "AsyncQueryBench1",
+      "policy": "autogen",
+      "shardID": 152,
+      "fileName": "20180924T073748Z.s152.tar.gz",
+      "size": 14943232,
+      "lastModified": 0
+    }
+  ]
+}

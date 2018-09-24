@@ -49,3 +49,19 @@ each combination of these values so the total number of series can be computed
 by multiplying the values (`100 * 20 * 4`).
 
 
+## Inlfuxdb-java client benchmarking
+
+inch-java uses OpenJdk code benchmarking tool [JMH](http://openjdk.java.net/projects/code-tools/jmh/). 
+Benchmark code is located in `org.influxdb.tool.jmh` package.
+
+It is possible to implement a new be benchmark by adding `org.openjdk.jmh.annotations.Benchmark` annotated class
+into that package.
+
+To run all benchmarks for multiple version of java clients run:
+
+```bash
+./run-client-bechmarks.sh '2.13' '2.14-SPAPSHOTS'
+```
+
+### Benchmark report visualization
+For result visualization you can use (https://jmh.morethan.io/). Just drag and drop all `target/*.json` reports into it. 
